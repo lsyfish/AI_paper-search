@@ -1,5 +1,49 @@
 {
   "id": "skills-index-default",
-  "updated_at": "2026-04-30 00:00:00",
-  "skills": []
+  "updated_at": "2026-04-30 10:20:00",
+  "skills": [
+    {
+      "id": "outline-optimizer",
+      "name": "大纲优化助手",
+      "version": "v1.0.0",
+      "description": "强化论文大纲生成质量，补充研究问题、方法路径与章节层级约束。",
+      "min_app_version": "v1.3.2",
+      "download_url": "https://raw.githubusercontent.com/Abnerla/AI_paper/main/Management/skills/outline-optimizer.zip",
+      "publisher": "PaperLab",
+      "homepage": "https://github.com/Abnerla/AI_paper",
+      "global_hook": false,
+      "scene_bindings": [
+        "paper_write.outline"
+      ]
+    },
+    {
+      "id": "abstract-focus-enhancer",
+      "name": "摘要聚焦增强器",
+      "version": "v1.0.0",
+      "description": "用于约束摘要的结构完整性，突出研究目的、方法、结果和结论。",
+      "min_app_version": "v1.3.2",
+      "download_url": "https://raw.githubusercontent.com/Abnerla/AI_paper/main/Management/skills/abstract-focus-enhancer.zip",
+      "publisher": "PaperLab",
+      "homepage": "https://github.com/Abnerla/AI_paper",
+      "global_hook": false,
+      "scene_bindings": [
+        "paper_write.abstract"
+      ]
+    },
+    {
+      "id": "academic-tone-polisher",
+      "name": "学术语气校正器",
+      "version": "v1.0.0",
+      "description": "用于章节写作和学术润色，约束表述风格、逻辑衔接和术语一致性。",
+      "min_app_version": "v1.3.2",
+      "download_url": "https://raw.githubusercontent.com/Abnerla/AI_paper/main/Management/skills/academic-tone-polisher.zip",
+      "publisher": "PaperLab",
+      "homepage": "https://github.com/Abnerla/AI_paper",
+      "global_hook": false,
+      "scene_bindings": [
+        "paper_write.section",
+        "polish.run_task"
+      ]
+    }
+  ]
 }

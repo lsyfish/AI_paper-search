@@ -1,0 +1,41 @@
+{
+  "id": "abstract-focus-enhancer",
+  "name": "摘要聚焦增强器",
+  "version": "v1.0.0",
+  "description": "用于约束摘要的结构完整性，突出研究目的、方法、结果和结论。",
+  "min_app_version": "v1.3.2",
+  "entry": {
+    "module": "entry",
+    "class": "AbstractFocusEnhancerSkill"
+  },
+  "priority": 20,
+  "actions": [
+    {
+      "id": "abstract_review",
+      "label": "审校摘要",
+      "description": "检查摘要是否包含目的、方法、结果和结论。",
+      "input_schema": {
+        "fields": [
+          {
+            "id": "abstract_text",
+            "label": "摘要正文",
+            "type": "textarea",
+            "required": true,
+            "placeholder": "粘贴当前摘要"
+          },
+          {
+            "id": "discipline",
+            "label": "学科方向",
+            "type": "text",
+            "required": false,
+            "placeholder": "例如：教育技术、计算机科学"
+          }
+        ]
+      }
+    }
+  ],
+  "scene_bindings": [
+    "paper_write.abstract"
+  ],
+  "global_hook": false
+}

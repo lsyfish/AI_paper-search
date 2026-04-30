@@ -1,0 +1,56 @@
+{
+  "id": "academic-tone-polisher",
+  "name": "学术语气校正器",
+  "version": "v1.0.0",
+  "description": "用于章节写作和学术润色，约束表述风格、逻辑衔接和术语一致性。",
+  "min_app_version": "v1.3.2",
+  "entry": {
+    "module": "entry",
+    "class": "AcademicTonePolisherSkill"
+  },
+  "priority": 30,
+  "actions": [
+    {
+      "id": "tone_review",
+      "label": "检查语气",
+      "description": "检查段落是否存在口语化、跳跃式表述或术语不一致问题。",
+      "input_schema": {
+        "fields": [
+          {
+            "id": "text",
+            "label": "正文内容",
+            "type": "textarea",
+            "required": true,
+            "placeholder": "粘贴需要检查的段落"
+          },
+          {
+            "id": "focus",
+            "label": "检查重点",
+            "type": "select",
+            "required": true,
+            "default": "tone",
+            "options": [
+              {
+                "label": "学术语气",
+                "value": "tone"
+              },
+              {
+                "label": "逻辑衔接",
+                "value": "logic"
+              },
+              {
+                "label": "术语一致性",
+                "value": "term"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "scene_bindings": [
+    "paper_write.section",
+    "polish.run_task"
+  ],
+  "global_hook": false
+}

@@ -1,0 +1,41 @@
+{
+  "id": "outline-optimizer",
+  "name": "大纲优化助手",
+  "version": "v1.0.0",
+  "description": "强化论文大纲生成质量，补充研究问题、方法路径与章节层级约束。",
+  "min_app_version": "v1.3.2",
+  "entry": {
+    "module": "entry",
+    "class": "OutlineOptimizerSkill"
+  },
+  "priority": 10,
+  "actions": [
+    {
+      "id": "outline_check",
+      "label": "审校大纲",
+      "description": "根据主题与现有大纲给出结构改进建议。",
+      "input_schema": {
+        "fields": [
+          {
+            "id": "topic",
+            "label": "研究主题",
+            "type": "text",
+            "required": true,
+            "placeholder": "例如：生成式人工智能对学术写作效率的影响"
+          },
+          {
+            "id": "outline",
+            "label": "现有大纲",
+            "type": "textarea",
+            "required": true,
+            "placeholder": "粘贴当前论文大纲"
+          }
+        ]
+      }
+    }
+  ],
+  "scene_bindings": [
+    "paper_write.outline"
+  ],
+  "global_hook": false
+}

@@ -1,6 +1,6 @@
 {
   "id": "skills-index-default",
-  "updated_at": "2026-04-30 10:20:00",
+  "updated_at": "2026-05-03 16:10:00",
   "skills": [
     {
       "id": "outline-optimizer",
@@ -14,6 +14,21 @@
       "global_hook": false,
       "scene_bindings": [
         "paper_write.outline"
+      ]
+    },
+    {
+      "id": "research-method-advisor",
+      "name": "研究方法建议器",
+      "version": "v1.0.0",
+      "description": "根据研究主题和目标，推荐合适的研究方法、数据收集方式和分析工具。",
+      "min_app_version": "v1.3.2",
+      "download_url": "https://raw.githubusercontent.com/Abnerla/AI_paper/main/Management/skills/research-method-advisor.zip",
+      "publisher": "PaperLab",
+      "homepage": "https://github.com/Abnerla/AI_paper",
+      "global_hook": false,
+      "scene_bindings": [
+        "paper_write.outline",
+        "paper_write.section"
       ]
     },
     {
@@ -43,6 +58,34 @@
       "scene_bindings": [
         "paper_write.section",
         "polish.run_task"
+      ]
+    },
+    {
+      "id": "reference-formatter",
+      "name": "参考文献格式化器",
+      "version": "v1.0.0",
+      "description": "自动检查和格式化参考文献，支持 GB/T 7714、APA、MLA 等多种引用格式。",
+      "min_app_version": "v1.3.2",
+      "download_url": "https://raw.githubusercontent.com/Abnerla/AI_paper/main/Management/skills/reference-formatter.zip",
+      "publisher": "PaperLab",
+      "homepage": "https://github.com/Abnerla/AI_paper",
+      "global_hook": false,
+      "scene_bindings": [
+        "paper_write.references"
+      ]
+    },
+    {
+      "id": "data-table-generator",
+      "name": "数据表格生成器",
+      "version": "v1.0.0",
+      "description": "根据研究数据生成规范的学术表格，支持描述性统计、对比分析等多种表格类型。",
+      "min_app_version": "v1.3.2",
+      "download_url": "https://raw.githubusercontent.com/Abnerla/AI_paper/main/Management/skills/data-table-generator.zip",
+      "publisher": "PaperLab",
+      "homepage": "https://github.com/Abnerla/AI_paper",
+      "global_hook": false,
+      "scene_bindings": [
+        "paper_write.section"
       ]
     }
   ]

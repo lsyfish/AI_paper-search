@@ -1,0 +1,93 @@
+{
+  "id": "research-method-advisor",
+  "name": "研究方法建议器",
+  "version": "v1.0.0",
+  "description": "根据研究主题和目标，推荐合适的研究方法、数据收集方式和分析工具。",
+  "min_app_version": "v1.3.2",
+  "entry": {
+    "module": "entry",
+    "class": "ResearchMethodAdvisorSkill"
+  },
+  "priority": 15,
+  "actions": [
+    {
+      "id": "suggest_method",
+      "label": "推荐研究方法",
+      "description": "根据研究问题推荐合适的研究方法和设计。",
+      "input_schema": {
+        "fields": [
+          {
+            "id": "research_question",
+            "label": "研究问题",
+            "type": "textarea",
+            "required": true,
+            "placeholder": "描述你的核心研究问题"
+          },
+          {
+            "id": "discipline",
+            "label": "学科领域",
+            "type": "select",
+            "required": true,
+            "default": "education",
+            "options": [
+              {
+                "label": "教育学",
+                "value": "education"
+              },
+              {
+                "label": "心理学",
+                "value": "psychology"
+              },
+              {
+                "label": "社会学",
+                "value": "sociology"
+              },
+              {
+                "label": "管理学",
+                "value": "management"
+              },
+              {
+                "label": "计算机科学",
+                "value": "computer_science"
+              },
+              {
+                "label": "其他",
+                "value": "other"
+              }
+            ]
+          },
+          {
+            "id": "research_type",
+            "label": "研究类型偏好",
+            "type": "select",
+            "required": false,
+            "default": "mixed",
+            "options": [
+              {
+                "label": "定量研究",
+                "value": "quantitative"
+              },
+              {
+                "label": "定性研究",
+                "value": "qualitative"
+              },
+              {
+                "label": "混合研究",
+                "value": "mixed"
+              },
+              {
+                "label": "不确定",
+                "value": "unsure"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "scene_bindings": [
+    "paper_write.outline",
+    "paper_write.section"
+  ],
+  "global_hook": false
+}

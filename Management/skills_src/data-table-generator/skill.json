@@ -1,0 +1,73 @@
+{
+  "id": "data-table-generator",
+  "name": "数据表格生成器",
+  "version": "v1.0.0",
+  "description": "根据研究数据生成规范的学术表格，支持描述性统计、对比分析等多种表格类型。",
+  "min_app_version": "v1.3.2",
+  "entry": {
+    "module": "entry",
+    "class": "DataTableGeneratorSkill"
+  },
+  "priority": 50,
+  "actions": [
+    {
+      "id": "generate_table",
+      "label": "生成表格",
+      "description": "根据数据和要求生成格式化的学术表格。",
+      "input_schema": {
+        "fields": [
+          {
+            "id": "data",
+            "label": "原始数据",
+            "type": "textarea",
+            "required": true,
+            "placeholder": "粘贴原始数据（支持 CSV、Excel 复制等格式）"
+          },
+          {
+            "id": "table_type",
+            "label": "表格类型",
+            "type": "select",
+            "required": true,
+            "default": "descriptive",
+            "options": [
+              {
+                "label": "描述性统计表",
+                "value": "descriptive"
+              },
+              {
+                "label": "对比分析表",
+                "value": "comparison"
+              },
+              {
+                "label": "相关性矩阵",
+                "value": "correlation"
+              },
+              {
+                "label": "频数分布表",
+                "value": "frequency"
+              }
+            ]
+          },
+          {
+            "id": "caption",
+            "label": "表格标题",
+            "type": "text",
+            "required": false,
+            "placeholder": "例如：不同教学方法的学习效果对比"
+          },
+          {
+            "id": "add_notes",
+            "label": "添加注释",
+            "type": "checkbox",
+            "default": true,
+            "help": "在表格下方添加必要的注释说明"
+          }
+        ]
+      }
+    }
+  ],
+  "scene_bindings": [
+    "paper_write.section"
+  ],
+  "global_hook": false
+}

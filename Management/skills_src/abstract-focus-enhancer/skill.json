@@ -3,7 +3,7 @@
   "name": "摘要聚焦增强器",
   "version": "v1.0.0",
   "description": "用于约束摘要的结构完整性，突出研究目的、方法、结果和结论。",
-  "min_app_version": "v1.3.2",
+  "min_app_version": "v1.4.0",
   "entry": {
     "module": "entry",
     "class": "AbstractFocusEnhancerSkill"

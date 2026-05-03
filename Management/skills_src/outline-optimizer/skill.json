@@ -3,7 +3,7 @@
   "name": "大纲优化助手",
   "version": "v1.0.0",
   "description": "强化论文大纲生成质量，补充研究问题、方法路径与章节层级约束。",
-  "min_app_version": "v1.3.2",
+  "min_app_version": "v1.4.0",
   "entry": {
     "module": "entry",
     "class": "OutlineOptimizerSkill"

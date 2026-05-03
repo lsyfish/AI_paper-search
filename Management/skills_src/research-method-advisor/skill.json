@@ -3,7 +3,7 @@
   "name": "研究方法建议器",
   "version": "v1.0.0",
   "description": "根据研究主题和目标，推荐合适的研究方法、数据收集方式和分析工具。",
-  "min_app_version": "v1.3.2",
+  "min_app_version": "v1.4.0",
   "entry": {
     "module": "entry",
     "class": "ResearchMethodAdvisorSkill"

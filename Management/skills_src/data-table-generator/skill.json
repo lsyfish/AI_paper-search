@@ -3,7 +3,7 @@
   "name": "数据表格生成器",
   "version": "v1.0.0",
   "description": "根据研究数据生成规范的学术表格，支持描述性统计、对比分析等多种表格类型。",
-  "min_app_version": "v1.3.2",
+  "min_app_version": "v1.4.0",
   "entry": {
     "module": "entry",
     "class": "DataTableGeneratorSkill"

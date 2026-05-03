@@ -3,7 +3,7 @@
   "name": "学术语气校正器",
   "version": "v1.0.0",
   "description": "用于章节写作和学术润色，约束表述风格、逻辑衔接和术语一致性。",
-  "min_app_version": "v1.3.2",
+  "min_app_version": "v1.4.0",
   "entry": {
     "module": "entry",
     "class": "AcademicTonePolisherSkill"

@@ -3,7 +3,7 @@
   "name": "参考文献格式化器",
   "version": "v1.0.0",
   "description": "自动检查和格式化参考文献，支持 GB/T 7714、APA、MLA 等多种引用格式。",
-  "min_app_version": "v1.3.2",
+  "min_app_version": "v1.4.0",
   "entry": {
     "module": "entry",
     "class": "ReferenceFormatterSkill"

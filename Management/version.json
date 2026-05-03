@@ -1,13 +1,13 @@
 {
-  "version": 10,
-  "latest_version": "v1.3.2",
+  "version": 12,
+  "latest_version": "v1.4.0",
   "min_supported_version": "v1.3.0",
-  "release_date": "2026-04-28",
+  "release_date": "2026-05-03",
   "download_url": "https://github.com/Abnerla/AI_paper/releases",
   "changelog": [
     {
-      "version": "v1.3.2",
-      "date": "2026-04-28",
+      "version": "v1.4.0",
+      "date": "2026-05-03",
       "changes": [
       "新增 一次性推送流",
       "新增 模型路由（分功能自定义模型）",

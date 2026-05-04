@@ -1425,7 +1425,7 @@ class HomePage:
         self.hero_actions_bar.add(
             self._make_hero_shell_button(
                 self.hero_actions_bar,
-                'skills',
+                'Skills',
                 'secondary',
                 lambda: self._trigger_action('show_skills_center'),
                 padx=18,

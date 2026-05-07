@@ -1841,10 +1841,6 @@ class PaperWritePage(WorkspaceStateMixin):
             return
         apply_mixed_fonts(self.edit_text, self._current_cn_font, self._current_en_font, self._current_size_pt)
 
-    def _get_level_key_for_section(self, section_title):
-        level = self._section_levels.get(section_title, self._infer_outline_level(section_title)) if section_title else 1
-        return {1: 'h1', 2: 'h2', 3: 'h3'}.get(level, 'body')
-
     def _open_color_palette(self, mode):
         label = '字色' if mode == 'fg' else '底色'
         title = '选择字色' if mode == 'fg' else '选择底色'
@@ -1893,12 +1889,6 @@ class PaperWritePage(WorkspaceStateMixin):
             shell.grid_rowconfigure(row_index, weight=1, uniform=f'palette_row_{mode}')
         window.update_idletasks()
         window.lift()
-
-    def _insert_single_numbering(self):
-        self._apply_numbering_to_selected_lines('decimal', capture_selection=False)
-
-    def _batch_number_selected_lines(self):
-        self._apply_numbering_to_selected_lines('decimal')
 
     def _get_selected_line_range(self):
         stored = self._editor_selection_range or {}
@@ -2535,13 +2525,6 @@ class PaperWritePage(WorkspaceStateMixin):
         self._sync_editor_state(capture_selection=capture_selection)
         self.edit_text.focus_set()
 
-    def _find_text_start_in_line(self, line_no):
-        """返回该行第一个非空白字符的位置，保留缩进。"""
-        line_text = self.edit_text.get(f'{line_no}.0', f'{line_no}.0 lineend')
-        match = re.match(r'^[\s\u3000]*', line_text)
-        offset = len(match.group(0)) if match else 0
-        return f'{line_no}.{offset}'
-
     def _indent_selected_paragraphs(self):
         start_line, end_line = self._get_selected_line_range()
         self.edit_text.edit_separator()
@@ -2552,53 +2535,10 @@ class PaperWritePage(WorkspaceStateMixin):
         self._sync_editor_state()
         self.edit_text.focus_set()
 
-    def _unindent_selected_paragraphs(self):
-        start_line, end_line = self._get_selected_line_range()
-        self.edit_text.edit_separator()
-        for line_no in range(start_line, end_line + 1):
-            line_start = f'{line_no}.0'
-            line_text = self.edit_text.get(line_start, f'{line_no}.0 lineend')
-            if line_text.startswith(self.PARAGRAPH_INDENT):
-                self.edit_text.delete(line_start, f'{line_no}.2')
-            elif line_text.startswith('  '):
-                self.edit_text.delete(line_start, f'{line_no}.2')
-        self.edit_text.edit_separator()
-        self._sync_editor_state()
-        self.edit_text.focus_set()
-
-    def _insert_heading_template(self, level):
-        hashes = '#' * max(1, min(int(level), 6))
-        template = f'{hashes} '
-        self._insert_block_template(template)
-
-    def _insert_block_template(self, template):
-        insert_index = self.edit_text.index(tk.INSERT)
-        line_start = self.edit_text.index(f'{insert_index} linestart')
-        line_end = self.edit_text.index(f'{insert_index} lineend')
-        before = self.edit_text.get(line_start, insert_index)
-        after = self.edit_text.get(insert_index, line_end)
-
-        prefix = '\n' if before.strip() else ''
-        suffix = '\n' if after.strip() else ''
-        self.edit_text.insert(tk.INSERT, f'{prefix}{template}{suffix}')
-        self.edit_text.mark_set(tk.INSERT, f'{insert_index}+{len(prefix) + len(template)}c')
-        self.edit_text.edit_separator()
-        self._sync_editor_state()
-        self.edit_text.focus_set()
-
     def _insert_citation_template(self):
         insert_index = self.edit_text.index(tk.INSERT)
         self.edit_text.insert(tk.INSERT, '[]')
         self.edit_text.mark_set(tk.INSERT, f'{insert_index}+1c')
-        self.edit_text.edit_separator()
-        self._sync_editor_state(capture_selection=False)
-        self.edit_text.focus_set()
-
-    def _insert_reference_template(self):
-        template = '[1] 作者. 题名[J]. 期刊, 年, 卷(期): 页码.'
-        insert_index = self.edit_text.index(tk.INSERT)
-        self.edit_text.insert(tk.INSERT, template)
-        self.edit_text.mark_set(tk.INSERT, f'{insert_index}+4c')
         self.edit_text.edit_separator()
         self._sync_editor_state(capture_selection=False)
         self.edit_text.focus_set()
@@ -3552,33 +3492,6 @@ class PaperWritePage(WorkspaceStateMixin):
         return normalized.strip(' \t\r\n；;，,')
 
     @classmethod
-    def _merge_keyword_content(cls, current, extra):
-        current_text = cls._normalize_keyword_content(current)
-        extra_text = cls._normalize_keyword_content(extra)
-        if not extra_text:
-            return current_text
-        if not current_text:
-            return extra_text
-        if extra_text == current_text or extra_text in current_text:
-            return current_text
-        if current_text in extra_text:
-            return extra_text
-
-        items = []
-        seen = set()
-        for source in (current_text, extra_text):
-            for token in re.split(r'[；;，,\n]+', source):
-                item = token.strip(' \t\r\n；;，,')
-                if not item:
-                    continue
-                lowered = item.lower()
-                if lowered in seen:
-                    continue
-                seen.add(lowered)
-                items.append(item)
-        return '；'.join(items)
-
-    @classmethod
     def _format_keyword_line(cls, keyword_text, language='cn'):
         normalized = cls._normalize_keyword_content(keyword_text)
         if not normalized:
@@ -4190,38 +4103,14 @@ class PaperWritePage(WorkspaceStateMixin):
                 return title
         return ''
 
-    def _is_chinese_abstract_section_title(self, title):
-        return self._classify_outline_special_title(title) == 'cn_abstract'
-
-    def _is_english_abstract_section_title(self, title):
-        return self._classify_outline_special_title(title) == 'en_abstract'
-
     def _is_abstract_section_title(self, title):
         return self._classify_outline_special_title(title) in {'cn_abstract', 'en_abstract'}
-
-    def _is_chinese_keyword_section_title(self, title):
-        return self._classify_outline_special_title(title) == 'cn_keywords'
-
-    def _is_english_keyword_section_title(self, title):
-        return self._classify_outline_special_title(title) == 'en_keywords'
 
     def _is_keyword_section_title(self, title):
         return self._classify_outline_special_title(title) in {'cn_keywords', 'en_keywords'}
 
     def _find_chinese_abstract_section_title(self):
         return self._find_section_title_by_kind('cn_abstract')
-
-    def _find_english_abstract_section_title(self):
-        return self._find_section_title_by_kind('en_abstract')
-
-    def _find_abstract_section_title(self):
-        return self._find_chinese_abstract_section_title()
-
-    def _find_chinese_keyword_section_title(self):
-        return self._find_section_title_by_kind('cn_keywords')
-
-    def _find_english_keyword_section_title(self):
-        return self._find_section_title_by_kind('en_keywords')
 
     def _is_reference_section_title(self, title):
         return self._classify_outline_special_title(title) == 'reference'
@@ -4556,10 +4445,6 @@ class PaperWritePage(WorkspaceStateMixin):
                 return f'{existing}\n\n{new}'
             return new or existing
         return new or existing
-
-    @classmethod
-    def _merge_section_text(cls, existing_text, new_text):
-        return cls._compose_section_text(existing_text, new_text, write_mode='append')
 
     @classmethod
     def _merge_reference_entry_lists(cls, *groups):
@@ -5162,14 +5047,11 @@ class PaperWritePage(WorkspaceStateMixin):
     def _resolve_editor_display_source(self, title):
         return title
 
-    def _load_section_into_editor(self, source_title, scroll_target=''):
+    def _load_section_into_editor(self, source_title):
         content = self._normalize_section_body(self._sections.get(source_title, ''))
         self._editor_section_source = source_title
         self._set_editor_content(content, self._section_formats.get(source_title, []), reset_undo=True)
         self._apply_level_font_to_editor()
-
-    def _scroll_editor_to_heading(self, title):
-        self.edit_text.see('1.0')
 
     def _cancel_outline_drag_job(self):
         if not self._outline_drag_job:
@@ -5923,7 +5805,7 @@ class PaperWritePage(WorkspaceStateMixin):
 
     def _prepare_batch_section_write_inputs(self, section, index, total):
         self.set_status(
-            f'姝ｅ湪鍐欑 {index}/{total} 鑺傦細{section}',
+            f'正在写第 {index}/{total} 节：{section}',
             COLORS['warning'],
         )
         self._select_section(section, touch_context=False)
@@ -5933,82 +5815,6 @@ class PaperWritePage(WorkspaceStateMixin):
             'existing_formats': self._resolve_section_existing_formats(section),
             'word_count': int(self.wcount_var.get() or '1000'),
             'reference_style': self.ref_var.get(),
-        }
-
-    def _run_batch_write_task_legacy(self, targets, outline, word_count, reference_style):
-        total = len(targets)
-        completed_sections = []
-
-        for index, item in enumerate(targets, start=1):
-            section = item.get('section', '')
-            self.frame.after(
-                0,
-                lambda current=index, overall=total, title=section: self.set_status(
-                    f'正在写第 {current}/{overall} 节：{title}',
-                    COLORS['warning'],
-                ),
-            )
-            try:
-                result = self.writer.write_section(
-                    outline,
-                    section,
-                    item.get('existing_text', ''),
-                    word_count,
-                    reference_style,
-                )
-            except Exception as exc:
-                error_message = str(exc)
-                return {
-                    'ok': False,
-                    'failed_section': section,
-                    'completed_sections': completed_sections,
-                    'remaining_sections': [entry.get('section', '') for entry in targets[index - 1:]],
-                    'error_type': self._classify_batch_write_error(error_message),
-                    'error_message': error_message,
-                }
-
-            apply_event = threading.Event()
-            apply_result = {}
-
-            def apply_on_ui():
-                try:
-                    apply_result['payload'] = self._apply_written_section_result(
-                        section,
-                        result,
-                        existing_text=item.get('existing_text', ''),
-                        existing_formats=item.get('existing_formats', []),
-                        set_display=True,
-                        write_mode='replace',
-                    )
-                    self.set_status(
-                        f'已完成第 {index}/{total} 节：{section}',
-                        COLORS['warning'] if index < total else COLORS['info'],
-                    )
-                except Exception as ui_exc:
-                    apply_result['error'] = ui_exc
-                finally:
-                    apply_event.set()
-
-            self.frame.after(0, apply_on_ui)
-            apply_event.wait()
-
-            if apply_result.get('error') is not None:
-                error_message = str(apply_result['error'])
-                return {
-                    'ok': False,
-                    'failed_section': section,
-                    'completed_sections': completed_sections,
-                    'remaining_sections': [entry.get('section', '') for entry in targets[index - 1:]],
-                    'error_type': 'generic',
-                    'error_message': error_message,
-                }
-
-            completed_sections.append(section)
-
-        return {
-            'ok': True,
-            'completed_sections': completed_sections,
-            'completed_count': len(completed_sections),
         }
 
     def _run_batch_write_task(self, targets, outline, word_count, reference_style):
@@ -6067,7 +5873,7 @@ class PaperWritePage(WorkspaceStateMixin):
                             write_mode='replace',
                         ),
                         self.set_status(
-                            f'宸插畬鎴愮 {current}/{overall} 鑺傦細{title}',
+                            f'已完成第 {current}/{overall} 节：{title}',
                             COLORS['warning'] if current < overall else COLORS['info'],
                         ),
                     )
@@ -6182,7 +5988,7 @@ class PaperWritePage(WorkspaceStateMixin):
                 outline,
                 section,
                 existing,
-                int(self.wcount_var.get()),
+                int(self.wcount_var.get() or '1000'),
                 self.ref_var.get(),
             ),
             on_success=on_success,

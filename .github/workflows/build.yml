@@ -33,7 +33,7 @@ jobs:
             platform: windows
             artifact_name: AI_Paper-Windows
             artifact_ext: .exe
-          - os: macos-13
+          - os: macos-15-intel
             platform: macos
             arch: x64
             artifact_name: AI_Paper-macOS-Intel

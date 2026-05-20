@@ -4,6 +4,7 @@ import os
 import platform
 import re
 import shutil
+import time
 import subprocess
 import sys
 
@@ -158,6 +159,31 @@ def build_dmg_size(source_size):
     return rounded_size, f'{rounded_size // mib}m'
 
 
+def detach_volume_if_exists(volume_path):
+    """清理 hdiutil 可能残留的挂载点。"""
+    if not os.path.exists(volume_path):
+        return False
+
+    print(f'[build] Detaching stale DMG volume: {volume_path}')
+    completed = subprocess.run(
+        ['hdiutil', 'detach', volume_path, '-force'],
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding='utf-8',
+        errors='replace',
+    )
+    if completed.stdout:
+        print(completed.stdout.strip())
+    if completed.stderr:
+        print(completed.stderr.strip())
+
+    detached = completed.returncode == 0
+    if not detached:
+        print(f'[build] Failed to detach stale volume: {volume_path}')
+    return detached
+
+
 def write_text_file(path, content, executable=False):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w', encoding='utf-8', newline='\n') as file:
@@ -309,6 +335,7 @@ def run_pyinstaller():
 def create_dmg():
     """生成 macOS 的 .dmg 安装程序。"""
     app_path = os.path.join(DIST_DIR, f'{APP_NAME}.app')
+    volume_path = os.path.join('/Volumes', APP_NAME)
 
     # 检测当前架构
     machine = platform.machine().lower()
@@ -332,6 +359,7 @@ def create_dmg():
     print(f'[build] DMG source size: {format_size(app_size)}')
     print(f'[build] DMG staging size: {format_size(dmg_size_bytes)} ({dmg_size_arg})')
     print_disk_usage('Before DMG creation', DIST_DIR)
+    detach_volume_if_exists(volume_path)
 
     cmd = [
         'hdiutil', 'create',
@@ -344,19 +372,24 @@ def create_dmg():
         dmg_path,
     ]
     print(f'[build] Creating DMG for {arch_suffix}: {dmg_path}')
-    completed = subprocess.run(
-        cmd,
-        check=False,
-        capture_output=True,
-        text=True,
-        encoding='utf-8',
-        errors='replace',
-    )
-    if completed.stdout:
-        print(completed.stdout.strip())
-    if completed.stderr:
-        print(completed.stderr.strip())
-    if completed.returncode != 0:
+    completed = None
+    max_attempts = 3
+    for attempt in range(1, max_attempts + 1):
+        completed = subprocess.run(
+            cmd,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+        )
+        if completed.stdout:
+            print(completed.stdout.strip())
+        if completed.stderr:
+            print(completed.stderr.strip())
+        if completed.returncode == 0:
+            break
+
         error_output = '\n'.join(filter(None, [completed.stdout, completed.stderr]))
         if 'No space left on device' in error_output:
             print(
@@ -365,11 +398,23 @@ def create_dmg():
                 f'dmg_staging_size={format_size(dmg_size_bytes)}'
             )
             print_disk_usage('After DMG failure', DIST_DIR)
+
+        if 'Resource busy' not in error_output or attempt == max_attempts:
+            break
+
+        print(
+            f'[build] DMG volume is busy. '
+            f'Retrying {attempt}/{max_attempts} after cleanup.'
+        )
+        detach_volume_if_exists(volume_path)
+        time.sleep(2)
+
+    if completed is None or completed.returncode != 0:
         raise subprocess.CalledProcessError(
-            completed.returncode,
+            completed.returncode if completed else 1,
             cmd,
-            output=completed.stdout,
-            stderr=completed.stderr,
+            output=completed.stdout if completed else '',
+            stderr=completed.stderr if completed else '',
         )
     print(f'[build] DMG created: {dmg_path}')
 

@@ -4,7 +4,7 @@ Shared application metadata constants.
 """
 
 APP_NAME = '纸研社'
-APP_VERSION = 'v1.5.1'
+APP_VERSION = 'v1.5.3'
 
 MODULE_PAPER_WRITE = '论文写作'
 MODULE_AI_DIAGRAM = 'AI图表'

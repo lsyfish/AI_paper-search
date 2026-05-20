@@ -1,26 +1,20 @@
 {
-  "version": 14,
-  "latest_version": "v1.5.1",
-  "min_supported_version": "v1.3.0",
-  "release_date": "2026-05-16",
+  "version": 16,
+  "latest_version": "v1.5.3",
+  "min_supported_version": "v1.5.1",
+  "release_date": "2026-05-21",
   "download_url": "https://github.com/Abnerla/AI_paper/releases",
   "changelog": [
     {
-      "version": "v1.5.1",
-      "date": "2026-05-16",
+      "version": "v1.5.3",
+      "date": "2026-05-21",
       "changes": [
-    "新增 表格生成",
-    "新增 知识库",
+    "新增 图表生成",
+    "新增 图表MCP服务",
 
-    "优化 提示词模版",
-    "优化 模型使用动态模型列表策略",
+    "优化 数学公式的生成和显示",
 
-    "修复 模型配置部分功能失效",
-    "修复 提示词界面无法显示后半部分",
-    "修复 生成大纲后切换标题概率闪退",
-
-    "一些性能修复与优化~~~",
-    "支持英特尔芯片的Mac安装"
+    "一些性能修复与优化~~~"
       ]
     }
   ],

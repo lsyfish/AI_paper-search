@@ -14,6 +14,11 @@ import urllib.request
 import urllib.error
 
 from modules.remote_content import normalize_version
+from modules.skills_runtime import (
+    DEFAULT_SKILL_DESCRIPTION,
+    REGISTRY_DESCRIPTION_KEYS,
+    REGISTRY_NAME_KEYS,
+)
 
 
 # 技能市场API端点（优先使用本地文件，然后尝试远程端点）
@@ -23,6 +28,16 @@ SKILLSH_API_URLS = [
 CACHE_FILE_NAME = 'marketplace_cache.json'
 CACHE_TTL = 300  # 5 分钟
 FETCH_TIMEOUT = 15
+
+
+def _first_non_empty_text(mapping, keys):
+    if not isinstance(mapping, dict):
+        return ''
+    for key in keys:
+        value = str(mapping.get(key, '') or '').strip()
+        if value:
+            return value
+    return ''
 
 
 class SkillMarketplaceClient:
@@ -87,11 +102,13 @@ class SkillMarketplaceClient:
             if not skill_id or skill_id in seen_ids:
                 continue
             seen_ids.add(skill_id)
+            name = _first_non_empty_text(item, REGISTRY_NAME_KEYS) or skill_id
+            description = _first_non_empty_text(item, REGISTRY_DESCRIPTION_KEYS) or DEFAULT_SKILL_DESCRIPTION
             skills.append({
                 'id': skill_id,
-                'name': str(item.get('name', '') or '').strip() or skill_id,
+                'name': name,
                 'version': normalize_version(item.get('version', 'v0.0.0')),
-                'description': str(item.get('description', '') or '').strip(),
+                'description': description,
                 'min_app_version': normalize_version(item.get('min_app_version', 'v0.0.0')),
                 'download_url': str(item.get('download_url', '') or '').strip(),
                 'publisher': str(item.get('author', '') or item.get('publisher', '') or '').strip(),

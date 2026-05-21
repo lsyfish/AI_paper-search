@@ -76,6 +76,9 @@ DEFAULT_REGISTRY_PAYLOAD = {
     'updated_at': '',
     'skills': [],
 }
+DEFAULT_SKILL_DESCRIPTION = '该技能暂未提供介绍，请查看技能详情或仓库文档。'
+REGISTRY_NAME_KEYS = ('name', 'title', 'display_name', 'label')
+REGISTRY_DESCRIPTION_KEYS = ('description', 'summary', 'intro', 'readme', 'details')
 
 
 class SkillValidationError(ValueError):
@@ -143,6 +146,16 @@ def _unique_text_list(items, *, allowed=None):
         seen.add(value)
         result.append(value)
     return result
+
+
+def _first_non_empty_text(mapping, keys):
+    if not isinstance(mapping, dict):
+        return ''
+    for key in keys:
+        value = str(mapping.get(key, '') or '').strip()
+        if value:
+            return value
+    return ''
 
 
 class SkillHost:
@@ -501,12 +514,14 @@ class SkillManager:
             except SkillValidationError:
                 continue
             seen.add(skill_id)
+            name = _first_non_empty_text(item, REGISTRY_NAME_KEYS) or skill_id
+            description = _first_non_empty_text(item, REGISTRY_DESCRIPTION_KEYS) or DEFAULT_SKILL_DESCRIPTION
             result['skills'].append(
                 {
                     'id': skill_id,
-                    'name': str(item.get('name', '') or '').strip() or skill_id,
+                    'name': name,
                     'version': normalize_version(item.get('version', '')),
-                    'description': str(item.get('description', '') or '').strip(),
+                    'description': description,
                     'min_app_version': normalize_version(item.get('min_app_version', 'v0.0.0')),
                     'download_url': str(item.get('download_url', '') or '').strip(),
                     'publisher': str(item.get('publisher', '') or '').strip(),
@@ -1129,6 +1144,11 @@ class SkillManager:
 
     def build_skill_view(self, record, *, manifest=None, registry_entry=None):
         record = dict(record or {})
+        is_installed_record = bool(str(record.get('id', '') or '').strip())
+        registry_entry = dict(registry_entry or {})
+        skill_id = str(record.get('id', '') or registry_entry.get('id', '') or '').strip()
+        if skill_id and not record.get('id'):
+            record['id'] = skill_id
         manifest = manifest or self.get_skill_manifest(record.get('id', ''))
         if manifest:
             record.update(
@@ -1142,8 +1162,17 @@ class SkillManager:
                     'actions_count': len(list(manifest.get('actions', []) or [])),
                 }
             )
-        skill_id = str(record.get('id', '') or '').strip()
-        registry_entry = dict(registry_entry or {})
+
+        for key in ('name', 'description', 'min_app_version', 'publisher', 'homepage'):
+            if not str(record.get(key, '') or '').strip() and registry_entry.get(key):
+                record[key] = registry_entry.get(key)
+        if not str(record.get('version', '') or '').strip() and registry_entry.get('version'):
+            record['version'] = registry_entry.get('version')
+        if not record.get('scene_bindings') and registry_entry.get('scene_bindings'):
+            record['scene_bindings'] = list(registry_entry.get('scene_bindings', []) or [])
+        if 'global_hook' not in record and 'global_hook' in registry_entry:
+            record['global_hook'] = bool(registry_entry.get('global_hook', False))
+
         installed_version = normalize_version(record.get('version', 'v0.0.0'))
         latest_version = normalize_version(registry_entry.get('version', installed_version or 'v0.0.0'))
         has_update = bool(registry_entry) and compare_versions(installed_version, latest_version) < 0
@@ -1160,7 +1189,7 @@ class SkillManager:
             'registry_entry': registry_entry or None,
             'latest_version': latest_version,
             'has_update': has_update,
-            'is_installed': bool(skill_id),
+            'is_installed': is_installed_record,
             'is_local_only': bool(record.get('source_type') in {'zip', 'directory'} and not registry_entry),
             'bound_scene_ids': effective_bound,
         }

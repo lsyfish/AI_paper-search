@@ -353,28 +353,40 @@ class DiscoverSkillsPanel:
             self._on_all_repos_fetched(merged_skills)
 
     def _on_all_repos_fetched(self, repo_skills):
-        installed = self.skill_manager.list_installed_skills(self._registry_payload)
-        installed_map = {s.get('id'): s for s in installed}
-
         all_skills = []
         seen_ids = set()
 
         # 构建 repo_name → skill 的映射，为每个 skill 标注来源仓库名
         repo_skill_map = {}
+        registry_map = {}
         for repo_name, raw in repo_skills:
             skill_id = str(raw.get('id', '') or '').strip()
             if skill_id:
                 repo_skill_map[skill_id] = repo_name
+                registry_map[skill_id] = raw
+
+        if registry_map:
+            merged_payload = {
+                'id': 'merged-registry',
+                'updated_at': '',
+                'skills': list(registry_map.values()),
+            }
+        else:
+            merged_payload = self._registry_payload
+
+        installed = self.skill_manager.list_installed_skills(merged_payload)
+        installed_map = {s.get('id'): s for s in installed}
 
         # 如果远程拉取有数据，使用远程数据
         if repo_skills:
-            for item in self.skill_manager.list_registry_skills(self._registry_payload):
+            for item in self.skill_manager.list_registry_skills(merged_payload):
                 skill_id = item.get('id', '')
-                if skill_id in installed_map:
-                    merged = dict(installed_map[skill_id])
-                    merged['is_installed'] = True
-                else:
-                    merged = dict(item)
+                merged = self.skill_manager.build_skill_view(
+                    installed_map.get(skill_id, {}),
+                    registry_entry=registry_map.get(skill_id) or item.get('registry_entry') or item,
+                )
+                if skill_id not in installed_map:
+                    merged['is_installed'] = False
                 merged['repo_name'] = repo_skill_map.get(skill_id, '官方仓库')
                 if skill_id not in seen_ids:
                     seen_ids.add(skill_id)
@@ -393,11 +405,12 @@ class DiscoverSkillsPanel:
             # 远程拉取全部失败，回退到本地缓存
             for item in self.skill_manager.list_registry_skills(self._registry_payload):
                 skill_id = item.get('id', '')
-                if skill_id in installed_map:
-                    entry = dict(installed_map[skill_id])
-                    entry['is_installed'] = True
-                else:
-                    entry = dict(item)
+                entry = self.skill_manager.build_skill_view(
+                    installed_map.get(skill_id, {}),
+                    registry_entry=item.get('registry_entry') or item,
+                )
+                if skill_id not in installed_map:
+                    entry['is_installed'] = False
                 entry.setdefault('repo_name', '官方仓库')
                 all_skills.append(entry)
                 seen_ids.add(skill_id)

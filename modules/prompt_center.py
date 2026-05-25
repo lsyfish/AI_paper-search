@@ -22,6 +22,7 @@ PROMPT_SOURCES = (PROMPT_SOURCE_SYSTEM, PROMPT_SOURCE_USER)
 
 PAGE_ORDER = (
     'paper_write',
+    'academic_paper',
     'ai_diagram',
     'ai_reduce',
     'plagiarism',

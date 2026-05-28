@@ -324,7 +324,8 @@ class AcademicPaperPage(WorkspaceStateMixin):
         result_card = CardFrame(self.frame, padding=18)
         result_card.grid(row=1, column=2, sticky='nsew', padx=(10, 22), pady=(0, 18))
         result_card.inner.grid_columnconfigure(0, weight=1)
-        result_card.inner.grid_rowconfigure(1, weight=1)
+        result_card.inner.grid_rowconfigure(1, weight=2)
+        result_card.inner.grid_rowconfigure(4, weight=3)
 
         title_row = tk.Frame(result_card.inner, bg=COLORS['card_bg'])
         title_row.grid(row=0, column=0, sticky='ew', pady=(0, 10))
@@ -355,8 +356,49 @@ class AcademicPaperPage(WorkspaceStateMixin):
         self.clear_button = ModernButton(title_row, '清空', style='secondary', command=self._clear_workspace)
         self.clear_button.grid(row=0, column=4, rowspan=2, sticky='e', padx=(8, 0))
 
-        self.result_text = self._build_text(result_card.inner, height=16)
+        self.result_text = self._build_text(result_card.inner, height=9)
         self.result_text.grid(row=1, column=0, sticky='nsew')
+
+        # ── 草稿区中间栏 ──────────────────────────────────────────
+        mid_bar = tk.Frame(result_card.inner, bg=COLORS['card_bg'])
+        mid_bar.grid(row=2, column=0, sticky='ew', pady=(10, 6))
+        mid_bar.grid_columnconfigure(0, weight=1)
+        tk.Label(
+            mid_bar,
+            text='论文草稿',
+            font=FONTS['body_bold'],
+            fg=COLORS['text_main'],
+            bg=COLORS['card_bg'],
+        ).grid(row=0, column=0, sticky='w')
+        tk.Label(
+            mid_bar,
+            text='可手动追加产出稿内容，完成后写入论文写作页',
+            font=FONTS['tiny'],
+            fg=COLORS['text_sub'],
+            bg=COLORS['card_bg'],
+        ).grid(row=1, column=0, sticky='w', pady=(2, 0))
+
+        draft_btn_frame = tk.Frame(mid_bar, bg=COLORS['card_bg'])
+        draft_btn_frame.grid(row=0, column=1, rowspan=2, sticky='e')
+        ModernButton(
+            draft_btn_frame, '↓ 追加到草稿', style='secondary',
+            command=self._append_result_to_draft,
+        ).pack(side=tk.LEFT, padx=(0, 6))
+        ModernButton(
+            draft_btn_frame, '写入论文写作', style='primary',
+            command=self._send_draft_to_paper_write,
+        ).pack(side=tk.LEFT, padx=(0, 6))
+        ModernButton(
+            draft_btn_frame, '清空草稿', style='secondary',
+            command=self._clear_draft,
+        ).pack(side=tk.LEFT)
+
+        tk.Frame(result_card.inner, bg=COLORS['divider'], height=1).grid(
+            row=3, column=0, sticky='ew', pady=(0, 6)
+        )
+
+        self.draft_text = self._build_text(result_card.inner, height=11)
+        self.draft_text.grid(row=4, column=0, sticky='nsew')
 
     @staticmethod
     def _section_title(parent, title, subtitle=''):
@@ -739,12 +781,51 @@ class AcademicPaperPage(WorkspaceStateMixin):
         except Exception:
             pass
 
+    def _append_result_to_draft(self):
+        text = self._text_value(self.result_text)
+        if not text:
+            return
+        current = self._text_value(self.draft_text)
+        separator = '\n\n' if current else ''
+        self._set_text_value(self.draft_text, current + separator + text)
+        self.set_status('已将产出稿内容追加到论文草稿', COLORS['success'])
+        self.save_workspace_state_now(save_to_disk=False)
+
+    def _send_draft_to_paper_write(self):
+        text = self._text_value(self.draft_text)
+        if not text:
+            self.set_status('论文草稿为空，请先追加产出稿内容', COLORS['warning'])
+            return
+        if not self.app_bridge:
+            self.set_status('无法连接到论文写作页', COLORS['error'])
+            return
+        topic = self.topic_var.get().strip() or '论文正文'
+        outcome = self.app_bridge.apply_result_to_paper_write(
+            text,
+            target_mode='body',
+            write_mode='replace',
+            section_hint=topic,
+        )
+        if outcome.get('ok'):
+            self.set_status(f'已将论文草稿写入论文写作页「{topic}」章节', COLORS['success'])
+            if self.navigate_page:
+                self.navigate_page('paper_write')
+        else:
+            self.set_status(f'写入失败：{outcome.get("message", "")}', COLORS['error'])
+
+    def _clear_draft(self):
+        if not self._text_value(self.draft_text):
+            return
+        if messagebox.askyesno('清空草稿', '确定清空论文草稿区内容吗？', parent=self.frame):
+            self._set_text_value(self.draft_text, '')
+            self.save_workspace_state_now(save_to_disk=False)
+
     def _clear_workspace(self):
         if not messagebox.askyesno('AI 论文助手', '确定清空当前对话、材料和结果吗？', parent=self.frame):
             return
         self._conversation = []
         self._last_result = ''
-        for widget in (self.primary_text, self.secondary_text, self.result_text, self.input_text):
+        for widget in (self.primary_text, self.secondary_text, self.result_text, self.input_text, self.draft_text):
             self._set_text_value(widget, '')
         self._set_text_value(self.chat_text, '', readonly=True)
         self.save_workspace_state_now(save_to_disk=True)
@@ -763,6 +844,7 @@ class AcademicPaperPage(WorkspaceStateMixin):
             'secondary_text': self._text_value(self.secondary_text),
             'input_text': self._text_value(self.input_text),
             'result_text': self._text_value(self.result_text),
+            'draft_text': self._text_value(self.draft_text),
             'conversation': list(self._conversation[-40:]),
         }
 
@@ -783,6 +865,7 @@ class AcademicPaperPage(WorkspaceStateMixin):
         self._set_text_value(self.input_text, state.get('input_text', ''))
         self._set_text_value(self.result_text, state.get('result_text', ''))
         self._last_result = self._text_value(self.result_text)
+        self._set_text_value(self.draft_text, state.get('draft_text', ''))
         self._conversation = [item for item in state.get('conversation', []) if isinstance(item, dict)]
         chat_lines = []
         for item in self._conversation[-20:]:

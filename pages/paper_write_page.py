@@ -2500,6 +2500,7 @@ class PaperWritePage(WorkspaceStateMixin):
         self._find_window = None
         self._find_query_var = None
         self._replace_query_var = None
+        self._lit_search_window = None
         self._editor_tool_buttons = {}
         self._editor_tool_images = {}
         self._editor_bg_swatch_images = {}
@@ -3144,7 +3145,7 @@ class PaperWritePage(WorkspaceStateMixin):
             ],
             [('居左', lambda: self._apply_alignment(TABLE_ALIGN_LEFT)), ('居中', lambda: self._apply_alignment(TABLE_ALIGN_CENTER)), ('居右', lambda: self._apply_alignment(TABLE_ALIGN_RIGHT))],
             [('缩进', self._indent_selected_paragraphs), ('项目符号', self._open_bullet_menu), ('编号', self._open_numbering_dialog)],
-            [('引用', self._insert_citation_template), ('查替', self._open_find_dialog)],
+            [('引用', self._insert_citation_template), ('查替', self._open_find_dialog), ('检索', self._open_literature_search_dialog)],
         ]
         column = 0
         for group_index, group in enumerate(tool_groups):
@@ -5498,6 +5499,294 @@ class PaperWritePage(WorkspaceStateMixin):
         self._find_query_var = None
         self._replace_query_var = None
         self.edit_text.tag_remove('find_match', '1.0', tk.END)
+
+    # ── 联网文献检索对话框 ──────────────────────────────────────
+
+    def _open_literature_search_dialog(self):
+        if (
+            self._lit_search_window is not None
+            and self._lit_search_window.winfo_exists()
+        ):
+            self._lit_search_window.deiconify()
+            self._lit_search_window.lift()
+            self._lit_search_window.focus_set()
+            return
+
+        from modules.literature_search import (
+            format_reference,
+            make_result_label,
+            search_all,
+            SOURCE_SEMANTIC_SCHOLAR,
+            SOURCE_PUBMED,
+            SOURCE_CROSSREF,
+            SOURCE_ARXIV,
+        )
+
+        window = tk.Toplevel(self.frame)
+        window.title('联网文献检索')
+        window.transient(self.frame.winfo_toplevel())
+        window.resizable(True, True)
+        window.configure(bg=COLORS['card_bg'])
+        window.geometry('880x580')
+        window.minsize(660, 460)
+        self._lit_search_window = window
+
+        _results = []
+        _pending = {}
+        _active = [0]
+
+        def _get_style():
+            try:
+                return str(self.ref_var.get() or 'GB/T 7714').strip()
+            except Exception:
+                return 'GB/T 7714'
+
+        # ── 搜索栏 ──────────────────────────────────────────────
+        top = tk.Frame(window, bg=COLORS['card_bg'], padx=14, pady=10)
+        top.pack(fill=tk.X)
+
+        tk.Label(
+            top, text='关键词', font=FONTS['small'],
+            fg=COLORS['text_sub'], bg=COLORS['card_bg'],
+        ).pack(side=tk.LEFT, padx=(0, 6))
+
+        query_var = tk.StringVar()
+        query_entry = tk.Entry(
+            top, textvariable=query_var, font=FONTS['body'],
+            bg=COLORS['input_bg'], fg=COLORS['text_main'],
+            relief=tk.FLAT, highlightthickness=1,
+            highlightbackground=COLORS['input_border'], width=38,
+        )
+        query_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=4, padx=(0, 8))
+
+        search_btn = ModernButton(
+            top, '搜索', style='primary',
+            padx=14, pady=6, font=FONTS['body'],
+        )
+        search_btn.pack(side=tk.LEFT)
+
+        # ── 数据源选择 ───────────────────────────────────────────
+        src_row = tk.Frame(window, bg=COLORS['card_bg'], padx=14, pady=(0, 8))
+        src_row.pack(fill=tk.X)
+
+        tk.Label(
+            src_row, text='数据源:', font=FONTS['small'],
+            fg=COLORS['text_sub'], bg=COLORS['card_bg'],
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        source_vars = {}
+        for _src in [SOURCE_SEMANTIC_SCHOLAR, SOURCE_PUBMED, SOURCE_CROSSREF, SOURCE_ARXIV]:
+            _var = tk.BooleanVar(value=True)
+            source_vars[_src] = _var
+            tk.Checkbutton(
+                src_row, text=_src, variable=_var,
+                font=FONTS['small'], fg=COLORS['text_main'],
+                bg=COLORS['card_bg'], activebackground=COLORS['card_bg'],
+                selectcolor=COLORS['input_bg'],
+            ).pack(side=tk.LEFT, padx=(0, 14))
+
+        tk.Frame(window, bg=COLORS['divider'], height=1).pack(fill=tk.X, padx=14)
+
+        # ── 状态栏 ───────────────────────────────────────────────
+        status_var = tk.StringVar(value='输入关键词后点击「搜索」，可多选结果后批量插入')
+        tk.Label(
+            window, textvariable=status_var, font=FONTS['small'],
+            fg=COLORS['text_sub'], bg=COLORS['card_bg'], anchor='w',
+        ).pack(fill=tk.X, padx=14, pady=(6, 4))
+
+        # ── 结果列表 + 摘要预览 ──────────────────────────────────
+        mid = tk.Frame(window, bg=COLORS['card_bg'])
+        mid.pack(fill=tk.BOTH, expand=True, padx=14, pady=(0, 6))
+        mid.grid_columnconfigure(0, weight=3)
+        mid.grid_columnconfigure(1, weight=2)
+        mid.grid_rowconfigure(0, weight=1)
+
+        list_shell = tk.Frame(
+            mid, bg=COLORS['input_bg'],
+            highlightthickness=1, highlightbackground=COLORS['input_border'],
+        )
+        list_shell.grid(row=0, column=0, sticky='nsew', padx=(0, 8))
+
+        listbox = tk.Listbox(
+            list_shell, selectmode=tk.MULTIPLE, font=FONTS['small'],
+            bg=COLORS['input_bg'], fg=COLORS['text_main'],
+            selectbackground=COLORS['primary_light'],
+            selectforeground=COLORS['primary_dark'],
+            relief=tk.FLAT, borderwidth=0, activestyle='none',
+        )
+        _sb_list = ttk.Scrollbar(list_shell, orient=tk.VERTICAL, command=listbox.yview)
+        listbox.configure(yscrollcommand=_sb_list.set)
+        _sb_list.pack(side=tk.RIGHT, fill=tk.Y)
+        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        preview_shell = tk.Frame(mid, bg=COLORS['card_bg'])
+        preview_shell.grid(row=0, column=1, sticky='nsew')
+
+        tk.Label(
+            preview_shell, text='摘要 / 详情', font=FONTS['small'],
+            fg=COLORS['text_sub'], bg=COLORS['card_bg'], anchor='w',
+        ).pack(fill=tk.X)
+
+        preview_frame = tk.Frame(
+            preview_shell, bg=COLORS['input_bg'],
+            highlightthickness=1, highlightbackground=COLORS['input_border'],
+        )
+        preview_frame.pack(fill=tk.BOTH, expand=True, pady=(4, 0))
+
+        preview_text = tk.Text(
+            preview_frame, wrap=tk.WORD, font=FONTS['small'],
+            bg=COLORS['input_bg'], fg=COLORS['text_main'],
+            relief=tk.FLAT, padx=6, pady=6, state=tk.DISABLED,
+        )
+        _sb_preview = ttk.Scrollbar(
+            preview_frame, orient=tk.VERTICAL, command=preview_text.yview,
+        )
+        preview_text.configure(yscrollcommand=_sb_preview.set)
+        _sb_preview.pack(side=tk.RIGHT, fill=tk.Y)
+        preview_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # ── 底部操作栏 ───────────────────────────────────────────
+        tk.Frame(window, bg=COLORS['divider'], height=1).pack(fill=tk.X, padx=14)
+
+        footer = tk.Frame(window, bg=COLORS['card_bg'], padx=14, pady=10)
+        footer.pack(fill=tk.X)
+
+        style_label = tk.Label(
+            footer, font=FONTS['small'],
+            fg=COLORS['text_sub'], bg=COLORS['card_bg'],
+        )
+        style_label.pack(side=tk.LEFT)
+
+        def _refresh_style_label():
+            style_label.configure(text=f'引用格式: {_get_style()}（沿用写作设置）')
+
+        _refresh_style_label()
+
+        def _close_dialog():
+            self._lit_search_window = None
+            window.destroy()
+
+        ModernButton(
+            footer, '关闭', style='secondary',
+            padx=12, pady=6, font=FONTS['body'],
+            command=_close_dialog,
+        ).pack(side=tk.RIGHT)
+
+        insert_btn = ModernButton(
+            footer, '插入所选文献', style='primary',
+            padx=12, pady=6, font=FONTS['body'],
+        )
+        insert_btn.pack(side=tk.RIGHT, padx=(0, 8))
+
+        # ── 事件逻辑 ─────────────────────────────────────────────
+
+        def _update_preview(event=None):
+            sel = listbox.curselection()
+            if not sel:
+                return
+            idx = sel[-1]
+            if not (0 <= idx < len(_results)):
+                return
+            paper = _results[idx]
+            abstract = paper.get('abstract') or '（此来源暂无摘要）'
+            url = paper.get('url', '')
+            journal = paper.get('journal', '')
+            year = paper.get('year', '')
+            doi = paper.get('doi', '')
+            lines = []
+            if journal or year:
+                lines.append(f'期刊/会议: {journal}  {year}'.strip())
+            if doi:
+                lines.append(f'DOI: {doi}')
+            if url:
+                lines.append(f'链接: {url}')
+            lines.append('')
+            lines.append(abstract)
+            preview_text.config(state=tk.NORMAL)
+            preview_text.delete('1.0', tk.END)
+            preview_text.insert('1.0', '\n'.join(lines))
+            preview_text.config(state=tk.DISABLED)
+
+        listbox.bind('<<ListboxSelect>>', _update_preview)
+
+        def _on_source_done(source, source_results, error):
+            def _apply():
+                if not window.winfo_exists():
+                    return
+                _active[0] -= 1
+                if not error:
+                    _pending[source] = source_results
+
+                all_papers = []
+                seen = set()
+                for src_list in _pending.values():
+                    for p in src_list:
+                        key = (p.get('title') or '').lower().strip()[:80]
+                        if key and key not in seen:
+                            seen.add(key)
+                            all_papers.append(p)
+
+                _results.clear()
+                _results.extend(all_papers)
+
+                listbox.delete(0, tk.END)
+                for p in _results:
+                    listbox.insert(tk.END, make_result_label(p))
+
+                if _active[0] <= 0:
+                    search_btn.configure(state=tk.NORMAL)
+                    n = len(_results)
+                    suffix = ' (部分来源请求失败)' if error else ''
+                    status_var.set(f'共找到 {n} 条结果{suffix}，按住 Ctrl/Shift 可多选')
+
+            window.after(0, _apply)
+
+        def _do_search():
+            query = query_var.get().strip()
+            if not query:
+                status_var.set('请先输入检索关键词')
+                return
+            sources = [s for s, v in source_vars.items() if v.get()]
+            if not sources:
+                status_var.set('请至少勾选一个数据源')
+                return
+
+            _results.clear()
+            _pending.clear()
+            listbox.delete(0, tk.END)
+            preview_text.config(state=tk.NORMAL)
+            preview_text.delete('1.0', tk.END)
+            preview_text.config(state=tk.DISABLED)
+            _refresh_style_label()
+
+            search_btn.configure(state=tk.DISABLED)
+            _active[0] = len(sources)
+            status_var.set(f'正在检索 {", ".join(sources)}…')
+
+            search_all(query, sources, _on_source_done)
+
+        def _insert_selected():
+            sel = listbox.curselection()
+            if not sel:
+                status_var.set('请先在列表中选择（可多选）要插入的文献')
+                return
+            style = _get_style()
+            refs = []
+            for idx in sel:
+                if 0 <= idx < len(_results):
+                    refs.append(format_reference(_results[idx], style))
+            if not refs:
+                return
+            self._write_references_to_section('\n'.join(refs))
+            n = len(refs)
+            status_var.set(f'已将 {n} 条文献插入参考文献区')
+
+        search_btn.configure(command=_do_search)
+        insert_btn.configure(command=_insert_selected)
+        query_entry.bind('<Return>', lambda _e: _do_search())
+        window.protocol('WM_DELETE_WINDOW', _close_dialog)
+
+        query_entry.focus_set()
 
     def _find_next(self):
         self._find_text(backwards=False)

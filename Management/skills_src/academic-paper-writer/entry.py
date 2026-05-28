@@ -48,6 +48,8 @@ AGENT_PROMPTS = {
 - 推荐数据库（Web of Science, Scopus, CNKI, Google Scholar 等）
 - 筛选标准（时间范围、语言、研究类型）
 
+提示：用户可在「论文写作」页工具栏的「检索」按钮中直接联网检索 Semantic Scholar、PubMed、CrossRef、arXiv 并一键导入参考文献，适合快速获取核心文献；本策略方案作为系统检索的补充指引。
+
 请提供结构化的检索方案。""",
 
     'structure_architect': """你是结构建筑师 (structure_architect_agent)，负责设计论文结构。
@@ -270,7 +272,7 @@ class AcademicPaperWriterSkill:
         return {
             'system_append': '\n\n'.join(part for part in (agent_prompt, mode_protocol) if part),
             'prompt_append': (
-                '请严格遵循 academic-paper v3.1.1 的质量门槛：不虚构引用、不捏造数据、'
+                '请严格遵循 academic-paper v3.1.2 的质量门槛：不虚构引用、不捏造数据、'
                 '关键决策先给出可确认的检查点，输出应结构化、可操作，并标明需要用户补充的信息。'
             ),
             'metadata': {

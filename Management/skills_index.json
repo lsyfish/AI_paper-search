@@ -1,11 +1,11 @@
 {
   "id": "skills-index-default",
-  "updated_at": "2026-05-24 12:00:00",
+  "updated_at": "2026-05-28 00:00:00",
   "skills": [
     {
       "id": "academic-paper-writer",
       "name": "AI 论文助手",
-      "version": "v1.1.0",
+      "version": "v2.5",
       "description": "面向学术论文写作的 12-agent 协作系统，内置 agents、references、templates 与 examples，支持从选题、规划、文献综述、写作、修订、引用检查、格式转换到 AI 声明的完整工作流。",
       "min_app_version": "v1.5.0",
       "download_url": "https://raw.githubusercontent.com/Abnerla/AI_paper/main/Management/skills/academic-paper-writer.zip",

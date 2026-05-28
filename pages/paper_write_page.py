@@ -79,6 +79,15 @@ from modules.ui_components import (
     THEMES,
 )
 from modules.workspace_state import WorkspaceStateMixin
+from modules.literature_search import (
+    format_reference as _lit_format_reference,
+    make_result_label as _lit_make_result_label,
+    search_all as _lit_search_all,
+    SOURCE_SEMANTIC_SCHOLAR as _LIT_SOURCE_SS,
+    SOURCE_PUBMED as _LIT_SOURCE_PUBMED,
+    SOURCE_CROSSREF as _LIT_SOURCE_CROSSREF,
+    SOURCE_ARXIV as _LIT_SOURCE_ARXIV,
+)
 
 
 class _TableBlockWidget:
@@ -3113,6 +3122,18 @@ class PaperWritePage(WorkspaceStateMixin):
         )
         self._write_diagram_button_shell.pack(side=tk.LEFT, padx=(0, 8))
 
+        self._lit_search_button_shell, self._lit_search_button = create_home_shell_button(
+            top_row,
+            '查文献',
+            command=self._open_literature_search_dialog,
+            style='secondary',
+            padx=12,
+            pady=6,
+            font=FONTS['body'],
+            border_color=THEMES['light']['card_border'],
+        )
+        self._lit_search_button_shell.pack(side=tk.LEFT, padx=(0, 8))
+
         self._write_section_button_shell, self._write_section_button = create_home_shell_button(
             top_row,
             '写当前章节',
@@ -5512,15 +5533,13 @@ class PaperWritePage(WorkspaceStateMixin):
             self._lit_search_window.focus_set()
             return
 
-        from modules.literature_search import (
-            format_reference,
-            make_result_label,
-            search_all,
-            SOURCE_SEMANTIC_SCHOLAR,
-            SOURCE_PUBMED,
-            SOURCE_CROSSREF,
-            SOURCE_ARXIV,
-        )
+        format_reference = _lit_format_reference
+        make_result_label = _lit_make_result_label
+        search_all = _lit_search_all
+        SOURCE_SEMANTIC_SCHOLAR = _LIT_SOURCE_SS
+        SOURCE_PUBMED = _LIT_SOURCE_PUBMED
+        SOURCE_CROSSREF = _LIT_SOURCE_CROSSREF
+        SOURCE_ARXIV = _LIT_SOURCE_ARXIV
 
         window = tk.Toplevel(self.frame)
         window.title('联网文献检索')

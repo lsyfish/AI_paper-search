@@ -40,6 +40,7 @@ HIDDENIMPORTS = list(
             'docx',
             'docx.shared',
             'docx.enum.text',
+            'modules.literature_search',
             *PAGE_HIDDENIMPORTS,
         ]
     )

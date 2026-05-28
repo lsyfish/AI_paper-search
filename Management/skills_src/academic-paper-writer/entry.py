@@ -272,7 +272,7 @@ class AcademicPaperWriterSkill:
         return {
             'system_append': '\n\n'.join(part for part in (agent_prompt, mode_protocol) if part),
             'prompt_append': (
-                '请严格遵循 academic-paper v2.5 的质量门槛：不虚构引用、不捏造数据、'
+                '请严格遵循 academic-paper v3.1.2 的质量门槛：不虚构引用、不捏造数据、'
                 '关键决策先给出可确认的检查点，输出应结构化、可操作，并标明需要用户补充的信息。'
             ),
             'metadata': {

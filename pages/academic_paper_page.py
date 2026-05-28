@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import threading
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import filedialog, messagebox, ttk
 
 from modules.prompt_center import PromptCenter, PromptCenterError
 from modules.ui_components import COLORS, FONTS, CardFrame, ModernButton
@@ -350,8 +350,10 @@ class AcademicPaperPage(WorkspaceStateMixin):
         self.copy_button.grid(row=0, column=1, rowspan=2, sticky='e', padx=(10, 0))
         self.save_button = ModernButton(title_row, '保存历史', style='secondary', command=self._save_current_result)
         self.save_button.grid(row=0, column=2, rowspan=2, sticky='e', padx=(8, 0))
+        self.export_button = ModernButton(title_row, '导出文件', style='secondary', command=self._export_result)
+        self.export_button.grid(row=0, column=3, rowspan=2, sticky='e', padx=(8, 0))
         self.clear_button = ModernButton(title_row, '清空', style='secondary', command=self._clear_workspace)
-        self.clear_button.grid(row=0, column=3, rowspan=2, sticky='e', padx=(8, 0))
+        self.clear_button.grid(row=0, column=4, rowspan=2, sticky='e', padx=(8, 0))
 
         self.result_text = self._build_text(result_card.inner, height=16)
         self.result_text.grid(row=1, column=0, sticky='nsew')
@@ -639,6 +641,73 @@ class AcademicPaperPage(WorkspaceStateMixin):
         self.frame.clipboard_clear()
         self.frame.clipboard_append(text)
         self.set_status('已复制 AI 论文助手结果', COLORS['success'])
+
+    def _export_result(self):
+        text = self._text_value(self.result_text)
+        if not text:
+            messagebox.showinfo('导出文件', '当前没有可导出的结果。', parent=self.frame)
+            return
+
+        topic = self.topic_var.get().strip()
+        default_name = (topic[:30] if topic else '论文助手结果').replace('/', '_').replace('\\', '_')
+
+        path = filedialog.asksaveasfilename(
+            parent=self.frame,
+            title='导出结果',
+            initialfile=default_name,
+            defaultextension='.txt',
+            filetypes=[
+                ('Word 文档', '*.docx'),
+                ('纯文本', '*.txt'),
+                ('Markdown', '*.md'),
+            ],
+        )
+        if not path:
+            return
+
+        try:
+            if path.lower().endswith('.docx'):
+                self._export_as_docx(text, path)
+            else:
+                with open(path, 'w', encoding='utf-8') as fh:
+                    fh.write(text)
+            self.set_status(f'已导出到 {path}', COLORS['success'])
+        except Exception as exc:
+            messagebox.showerror('导出失败', str(exc), parent=self.frame)
+
+    def _export_as_docx(self, text: str, path: str) -> None:
+        import docx
+        from docx.shared import Cm, Pt
+
+        doc = docx.Document()
+        for section in doc.sections:
+            section.top_margin = Cm(2.54)
+            section.bottom_margin = Cm(2.54)
+            section.left_margin = Cm(3.17)
+            section.right_margin = Cm(3.17)
+
+        topic = self.topic_var.get().strip()
+        if topic:
+            heading = doc.add_heading(topic, level=0)
+            heading.runs[0].font.size = Pt(16)
+
+        for para in text.split('\n'):
+            stripped = para.strip()
+            if not stripped:
+                doc.add_paragraph('')
+                continue
+            # Treat lines starting with # as headings
+            if stripped.startswith('###'):
+                p = doc.add_heading(stripped.lstrip('#').strip(), level=3)
+            elif stripped.startswith('##'):
+                p = doc.add_heading(stripped.lstrip('#').strip(), level=2)
+            elif stripped.startswith('#'):
+                p = doc.add_heading(stripped.lstrip('#').strip(), level=1)
+            else:
+                p = doc.add_paragraph(stripped)
+                p.runs[0].font.size = Pt(12) if p.runs else None
+
+        doc.save(path)
 
     def _save_current_result(self):
         text = self._text_value(self.result_text)

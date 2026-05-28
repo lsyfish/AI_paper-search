@@ -1796,6 +1796,7 @@ class HomePage:
             ('文献综述', 'lit-review'),
             ('修订指导', 'revision-coach'),
             ('引用检查', 'citation-check'),
+            ('格式转换', 'format-convert'),
             ('AI 声明', 'disclosure'),
         )
         for label, mode in quick_entries:

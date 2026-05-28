@@ -4,11 +4,13 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       build_version:
         description: '手动构建时使用的版本号'
-        required: true
+        required: false
         type: string
 
 permissions:
